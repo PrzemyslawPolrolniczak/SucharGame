@@ -1,10 +1,11 @@
-/**
- * @author       Digitsensitive <digit.sensitivee@gmail.com>
- * @copyright    2018 - 2019 digitsensitive
- * @license      Digitsensitive
- */
+import Obstacle from './components/obstacle';
+import Collectable from './components/collectable';
 
-export class MainScene extends Phaser.Scene {
+export class MainScene extends Phaser.Scene { 
+  private score: number = 0;
+  private velocity: number = 150;
+  private scoreText;
+
   constructor() {
     super({
       key: "MainScene"
@@ -13,94 +14,43 @@ export class MainScene extends Phaser.Scene {
 
   private cursors;
   private player;
-  private velocity: number;
-  private collectables;
-  private score: number = 0;
-  private scoreText;
   private music;
-  private obstacle;
-  private isDead: boolean = false;
-  private number: number = 0;
   private background;
+  private obstacles = [];
+  private collectable: Collectable;
 
-  setRandomCords(screenWidth: number, screenHeight: number): number[] {
-    let x = Math.floor(Math.random() * screenWidth);
-    let y = Math.floor(Math.random() * screenHeight);
-
-    if (x >= screenWidth - 25) {
-      x -= 25;
-    } else if (x <= 25) {
-      x += 25;
-    }
-
-    if (y >= screenHeight - 25) {
-      y -= 25;
-    } else if (y <= 25) {
-      y += 25;
-    }
-
-    return [x, y];
+  addObstacle(): void {
+    this.obstacles.push( {obstacle: new Obstacle(this, () => this.endGame()), isSpawned: false} );
   }
 
-  setNewCollectable(): void {
-    const cords = this.setRandomCords(800, 600);
-    this.collectables = this.physics.add.image(cords[0], cords[1], "archive")
-    this.physics.add.overlap(this.player, this.collectables, this.collect, null, this)
-  }
-
-  collect(player, collectable): void {
-    this.score += 10;
-    this.scoreText.setText('Score: ' + this.score);
-    collectable.disableBody(true, true);
-    this.velocity += 10;
-    this.setNewCollectable()
-  }
-
-  die(player, obstacle) {
-    this.endGame();
-    this.isDead = true;
-  }
-
-  endGame() {
+  private endGame(): void {
     this.player.setVelocityX(0);
     this.player.setVelocityY(0);
     this.music.stop();
-    this.scene.start('GameOverScene', {score: this.score, obstacles: this.number})
+    this.scene.start('GameOverScene', {score: this.score, obstacles: Obstacle.spawned})
   }
 
-  spawnObstacle() {
-    console.log(this.number);
-    const cords = this.setRandomCords(800, 600);
-    this.obstacle = this.physics.add.image(cords[0], -50, "toomuch");
-    this.obstacle.setVelocityX( (Math.random() - 0.5) * 100);
-    this.obstacle.setVelocityY(100);
-    this.physics.add.overlap(this.player, this.obstacle, this.die, null, this)
-    this.number++;
+  private collect(): void {
+    this.velocity += 10;
+    this.score += 10;
+    this.scoreText.setText('Score: ' + this.score);
+    this.velocity += 10;
   }
 
   init() {
     this.score = 0;
-    this.number = 0;
+    Obstacle.spawned = 0;
+    this.velocity = 150;
     this.cursors = this.input.keyboard.createCursorKeys();
-
-  }
-
-  preload(): void {
-    this.load.audio("sucharbg", "./src/boilerplate/music/sucharbg.png");
-    this.load.image("archive", "./src/boilerplate/assets/archive.png");
-    this.load.image("toomuch", "./src/boilerplate/assets/toomuch.png");
-    this.load.image("suchar", "./src/boilerplate/assets/suchar.png");
-    this.load.audio("bgmusic", "./src/boilerplate/music/bgmusic.mp3");
   }
 
   create(): void {
-    this.background = this.add.tileSprite(0, 0, 800, 600, 'sucharbg');
     this.player = this.physics.add.image(100, 450, 'suchar');
-    this.setNewCollectable();
-    this.velocity = 150;
+    this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
+    this.collectable = new Collectable(this, () => this.collect());
+    this.collectable.setNewCollectable();
     this.music = this.sound.add("bgmusic");
     this.music.play();
-    this.scoreText = this.add.text(16, 16, 'SCORE: 0', { fontSize: '32px', fill: '#FFF' });
 
     this.player.setVelocityX(this.velocity);
     this.player.setVelocityY(-this.velocity);
@@ -110,7 +60,6 @@ export class MainScene extends Phaser.Scene {
         delay: 940,
         callback: () => {
           this.cameras.main.setZoom(1.01);
-          this.cameras.main.setZoom(1.02);
           setTimeout(() => {
             this.cameras.main.setZoom(1);
           }, 50)
@@ -118,45 +67,100 @@ export class MainScene extends Phaser.Scene {
         loop: true
       })
     }, 1000)
-    
 
-    this.time.delayedCall(5500, this.spawnObstacle, [], this);
-    this.time.delayedCall(8900, this.spawnObstacle, [], this);
-    this.time.delayedCall(13000, this.spawnObstacle, [], this);
-    this.time.delayedCall(16500, this.spawnObstacle, [], this);
-    this.time.delayedCall(18500, this.spawnObstacle, [], this);
-    this.time.delayedCall(19200, this.spawnObstacle, [], this);
-    this.time.delayedCall(19500, this.spawnObstacle, [], this);
-    this.time.delayedCall(20600, this.spawnObstacle, [], this);
-    this.time.delayedCall(22100, this.spawnObstacle, [], this);
-    this.time.delayedCall(22700, this.spawnObstacle, [], this);
-    this.time.delayedCall(23000, this.spawnObstacle, [], this);
-    this.time.delayedCall(24400, this.spawnObstacle, [], this);
-    this.time.delayedCall(26000, this.spawnObstacle, [], this);
-    this.time.delayedCall(26500, this.spawnObstacle, [], this);
-    this.time.delayedCall(26800, this.spawnObstacle, [], this);
+    const spawnTimeStamps = [
+      5500,
+      8900,
+      13000,
+      16500,
+      18500,
+      18850,
+      19200,
+      20600,
+      22100,
+      22700,
+      23000,
+      24400,
+      26000,
+      26500,
+      26800,
+      28400,
+      30000,
+      30300,
+      31900,
+      32200,
+      32500,
+      33000,
+      33300,
+      33600,
+      34100,
+      34400,
+      34700,
+      35200,
+      35500,
+      35800,
+      36300,
+      36600,
+      36900,
+      37400,
+      37700,
+      38000,
+      38500,
+      38800,
+      39100,
+      39600,
+      39900,
+      40200,
+      40700,
+      41000,
+      41300,
+      41800,
+      42100,
+      42400,
+      42900,
+      43200,
+      43500,
+      44000,
+      44300,
+      44600
+    ]
+
+    spawnTimeStamps.map(time => {
+      this.time.delayedCall(time, this.addObstacle, [], this);
+    })
   }
 
   update(): void {
-    if (!this.isDead) {
-      if (this.cursors.left.isDown) {
-        this.player.setVelocityX(-this.velocity);
-      }
-      if (this.cursors.right.isDown) {
-        this.player.setVelocityX(this.velocity);
-      }
-      if (this.cursors.down.isDown) {
-        this.player.setVelocityY(this.velocity);
-      }
-      if (this.cursors.up.isDown) {
-        this.player.setVelocityY(-this.velocity);
-      }
+    const { left, right, down, up } = this.cursors;
 
-      const isPlayerTouchingBoundry: boolean = this.player.x <= 15 || this.player.y <= 15 || this.player.x >= 800 - 15 || this.player.y >= 600 - 15;
+    if (left.isDown) {
+      this.player.setVelocityX(-this.velocity);
+    }
+    if (right.isDown) {
+      this.player.setVelocityX(this.velocity);
+    }
+    if (down.isDown) {
+      this.player.setVelocityY(this.velocity);
+    }
+    if (up.isDown) {
+      this.player.setVelocityY(-this.velocity);
+    }
 
-      if (isPlayerTouchingBoundry) {
-        this.endGame();
+    this.obstacles && this.obstacles.map(item => {
+      if (item.isSpawned && (item.obstacle.getXCord() <= -25 || item.obstacle.getXCord() >= 825 || item.obstacle.getYCord() >= 625)) {
+        item.obstacle.destroy();
+        const itemIndex = this.obstacles.indexOf(item);
+        this.obstacles.splice(itemIndex);
+      } else if (!item.isSpawned) {
+        item.obstacle.spawn();
+        item.isSpawned = true;
       }
+    })
+
+    const isPlayerTouchingBoundry: boolean = this.player.x <= 15 || this.player.y <= 15 || this.player.x >= 800 - 15 || this.player.y >= 600 - 15;
+
+    if (isPlayerTouchingBoundry) {
+      this.endGame();
     }
   }
 }
